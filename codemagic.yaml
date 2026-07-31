@@ -3,9 +3,9 @@ workflows:
     name: Compilar APK Medidores
     max_build_duration: 30
     instance_type: mac_mini_m1
-            script: |
-          gradle assembleDebug
+    scripts:
+      - name: Compilar instalador APK
         script: |
-          sh gradlew assembleDebug --no-daemon
+          gradle assembleDebug
     artifacts:
       - app/build/outputs/apk/**/*.apk
