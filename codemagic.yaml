@@ -2,12 +2,10 @@ workflows:
   android-build:
     name: Compilar APK Medidores
     max_build_duration: 30
-    instance_type: mac_mini_m1
+    instance_type: linux_x86_64
     scripts:
-      - name: Instalar Gradle y Compilar
+      - name: Compilar instalador APK
         script: |
-          brew install gradle@7
-          export PATH="/opt/homebrew/opt/gradle@7/bin:$PATH"
           gradle assembleDebug
     artifacts:
       - app/build/outputs/apk/**/*.apk
