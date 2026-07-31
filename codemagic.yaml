@@ -4,9 +4,9 @@ workflows:
     max_build_duration: 30
     instance_type: mac_mini_m1
     scripts:
-      - name: Compilar instalador APK
+      - name: Instalar Gradle y Compilar
         script: |
-          chmod +x gradlew
-          ./gradlew assembleDebug
+          brew install gradle
+          gradle assembleDebug
     artifacts:
       - app/build/outputs/apk/**/*.apk
