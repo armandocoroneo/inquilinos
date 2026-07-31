@@ -6,7 +6,8 @@ workflows:
     scripts:
       - name: Instalar Gradle y Compilar
         script: |
-          brew install gradle
+          brew install gradle@7
+          export PATH="/opt/homebrew/opt/gradle@7/bin:$PATH"
           gradle assembleDebug
     artifacts:
       - app/build/outputs/apk/**/*.apk
