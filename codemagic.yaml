@@ -6,6 +6,7 @@ workflows:
     scripts:
       - name: Compilar instalador APK
         script: |
-          gradle assembleDebug
+          chmod +x gradlew
+          ./gradlew assembleDebug
     artifacts:
       - app/build/outputs/apk/**/*.apk
