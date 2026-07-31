@@ -6,7 +6,7 @@ workflows:
     scripts:
       - name: Compilar instalador APK
         script: |
-          gradle wrapper --gradle-version 8.0
+          chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
     artifacts:
       - app/build/outputs/apk/**/*.apk
