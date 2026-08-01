@@ -135,7 +135,7 @@ fun RegistroConsumoScreen() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CustomTextField(value: String, onValueChange: (String) -> Unit, isNumeric: Boolean = false, singleLine: Boolean = true, trailingIcon: @Composable (() -> Unit)? = null) {
-    TextField(value = value, onValueChange = onValueChange, modifier = Modifier.fillMaxWidth().height(if (singleLine) 56.dp else 100.dp), colors = TextFieldDefaults.textFieldColors(containerColor = InputBg, textColor = Color.White, focusedIndicatorColor = BlueBtn, unfocusedIndicatorColor = Color.Transparent), shape = RoundedCornerShape(4.dp), singleLine = singleLine, trailingIcon = trailingIcon, keyboardOptions = KeyboardOptions(keyboardType = if (isNumeric) KeyboardType.Number else KeyboardType.Text))
+colors = TextFieldDefaults.textFieldColors(containerColor = InputBg, focusedTextColor = Color.White, unfocusedTextColor = Color.White, focusedIndicatorColor = BlueBtn, unfocusedIndicatorColor = Color.Transparent),
 }
 
 @Composable fun IndicatorDot(color: Color, label: String) { Row(verticalAlignment = Alignment.CenterVertically) { Box(modifier = Modifier.size(8.dp).background(color, shape = CircleShape)); Spacer(modifier = Modifier.width(4.dp)); Text(label, color = TextGray, fontSize = 12.sp) } }
