@@ -11,7 +11,7 @@ import com.example.medidores.ui.RegistroConsumoScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.super.onCreate(savedInstanceState)
+super.onCreate(savedInstanceState)
         setContent {
             MaterialTheme {
                 Surface(
