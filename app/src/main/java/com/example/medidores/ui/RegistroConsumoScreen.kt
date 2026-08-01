@@ -28,6 +28,18 @@ val RedBtn = Color(0xFFD32F2F)
 val BlueBtn = Color(0xFF1976D2)
 val TextGray = Color(0xFFB0B0B0)
 
+data class Registro(
+    val medidor: String,
+    val fecha: String,
+    val lecturaAnterior: Double,
+    val lecturaPosterior: Double,
+    val precioKw: Double,
+    val descripcion: String
+) {
+    val consumo: Double get() = lecturaPosterior - lecturaAnterior
+    val total: Double get() = consumo * precioKw
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegistroConsumoScreen() {
@@ -37,6 +49,13 @@ fun RegistroConsumoScreen() {
     var lecturaPosterior by remember { mutableStateOf("") }
     var precioKw by remember { mutableStateOf("") }
     var descripcion by remember { mutableStateOf("") }
+    var errorMsg by remember { mutableStateOf("") }
+
+    val registros = remember { mutableStateListOf<Registro>() }
+
+    val historialMedidorActual = registros.filter {
+        it.medidor.trim().equals(medidor.trim(), ignoreCase = true) && medidor.isNotBlank()
+    }
 
     Column(
         modifier = Modifier
@@ -67,7 +86,7 @@ fun RegistroConsumoScreen() {
         Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = CardBg), shape = RoundedCornerShape(6.dp)) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text("Agregar nuevo", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                
+
                 FormLabel("Medidor:")
                 CustomTextField(value = medidor, onValueChange = { medidor = it })
 
@@ -95,9 +114,47 @@ fun RegistroConsumoScreen() {
                     Button(onClick = {}, colors = ButtonDefaults.buttonColors(containerColor = BlueBtn), shape = RoundedCornerShape(4.dp)) { Text("Galería", fontSize = 13.sp) }
                 }
 
+                if (errorMsg.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(errorMsg, color = RedBtn, fontSize = 12.sp)
+                }
+
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Button(onClick = {}, modifier = Modifier.fillMaxWidth().height(48.dp), colors = ButtonDefaults.buttonColors(containerColor = GreenBtn), shape = RoundedCornerShape(4.dp)) {
+                Button(
+                    onClick = {
+                        val anterior = lecturaAnterior.toDoubleOrNull()
+                        val posterior = lecturaPosterior.toDoubleOrNull()
+                        val precio = precioKw.toDoubleOrNull()
+                        when {
+                            medidor.isBlank() -> errorMsg = "Ingresá el nombre del medidor"
+                            anterior == null -> errorMsg = "Lectura anterior inválida"
+                            posterior == null -> errorMsg = "Lectura posterior inválida"
+                            precio == null -> errorMsg = "Precio por kW inválido"
+                            posterior < anterior -> errorMsg = "La lectura posterior no puede ser menor a la anterior"
+                            else -> {
+                                errorMsg = ""
+                                registros.add(
+                                    Registro(
+                                        medidor = medidor,
+                                        fecha = fecha,
+                                        lecturaAnterior = anterior,
+                                        lecturaPosterior = posterior,
+                                        precioKw = precio,
+                                        descripcion = descripcion
+                                    )
+                                )
+                                lecturaAnterior = ""
+                                lecturaPosterior = ""
+                                precioKw = ""
+                                descripcion = ""
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = GreenBtn),
+                    shape = RoundedCornerShape(4.dp)
+                ) {
                     Text("Guardar registro", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
                 }
             }
@@ -124,9 +181,12 @@ fun RegistroConsumoScreen() {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Text("📊 Historial (12 por página)", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        Text(
+            if (medidor.isBlank()) "📊 Historial" else "📊 Historial de \"$medidor\"",
+            color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold
+        )
         Spacer(modifier = Modifier.height(8.dp))
-        TableLayout()
+        TableLayout(historialMedidorActual)
     }
 }
 
@@ -141,11 +201,22 @@ fun CustomTextField(value: String, onValueChange: (String) -> Unit, isNumeric: B
 @Composable fun IndicatorDot(color: Color, label: String) { Row(verticalAlignment = Alignment.CenterVertically) { Box(modifier = Modifier.size(8.dp).background(color, shape = CircleShape)); Spacer(modifier = Modifier.width(4.dp)); Text(label, color = TextGray, fontSize = 12.sp) } }
 
 @Composable
-fun TableLayout() {
+fun TableLayout(registros: List<Registro>) {
     Column(modifier = Modifier.fillMaxWidth().background(CardBg, shape = RoundedCornerShape(4.dp)).padding(8.dp)) {
         Row(modifier = Modifier.fillMaxWidth().background(InputBg).padding(8.dp)) {
-            listOf("Foto", "Medidor", "Consumo", "Total").forEach { Text(it, color = BlueBtn, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f)) }
+            listOf("Fecha", "Medidor", "Consumo", "Total").forEach { Text(it, color = BlueBtn, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f)) }
         }
-        Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) { Text("No hay registros en esta página", color = TextGray, fontSize = 12.sp) }
+        if (registros.isEmpty()) {
+            Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) { Text("No hay registros en esta página", color = TextGray, fontSize = 12.sp) }
+        } else {
+            registros.forEach { r ->
+                Row(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
+                    Text(r.fecha, color = Color.White, fontSize = 12.sp, modifier = Modifier.weight(1f))
+                    Text(r.medidor, color = Color.White, fontSize = 12.sp, modifier = Modifier.weight(1f))
+                    Text("%.1f".format(r.consumo), color = Color.White, fontSize = 12.sp, modifier = Modifier.weight(1f))
+                    Text("%.2f".format(r.total), color = Color.White, fontSize = 12.sp, modifier = Modifier.weight(1f))
+                }
+            }
+        }
     }
 }
