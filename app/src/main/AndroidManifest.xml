@@ -1,11 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<adaptive-icon xmlns:android="http://android.com">
-    <background>
-        <color android:color="#121212"/>
-    </background>
-    <foreground>
-        <vector android:width="108dp" android:height="108dp" android:viewportWidth="24" android:viewportHeight="24">
-            <path android:fillColor="#4CAF50" android:pathData="M12,2L4.5,20.29L5.21,21L12,18L18.79,21L19.5,20.29L12,2Z"/>
-        </vector>
-    </foreground>
-</adaptive-icon>
+<manifest xmlns:android="http://android.com"
+    package="com.example.medidores">
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="Control Medidores"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Material3.Dark">
+        
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Material3.Dark">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
