@@ -1,5 +1,6 @@
 package com.example.medidores.ui
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -15,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -28,6 +30,11 @@ val RedBtn = Color(0xFFD32F2F)
 val BlueBtn = Color(0xFF1976D2)
 val TextGray = Color(0xFFB0B0B0)
 
+private const val PREFS_NAME = "medidores_prefs"
+private const val PREFS_KEY = "registros_data"
+private const val FIELD_SEP = "~~"
+private const val RECORD_SEP = "||"
+
 data class Registro(
     val medidor: String,
     val fecha: String,
@@ -38,11 +45,53 @@ data class Registro(
 ) {
     val consumo: Double get() = lecturaPosterior - lecturaAnterior
     val total: Double get() = consumo * precioKw
+
+    fun encode(): String {
+        val descLimpia = descripcion.replace(FIELD_SEP, " ").replace(RECORD_SEP, " ")
+        val medidorLimpio = medidor.replace(FIELD_SEP, " ").replace(RECORD_SEP, " ")
+        val fechaLimpia = fecha.replace(FIELD_SEP, " ").replace(RECORD_SEP, " ")
+        return listOf(medidorLimpio, fechaLimpia, lecturaAnterior, lecturaPosterior, precioKw, descLimpia)
+            .joinToString(FIELD_SEP)
+    }
+
+    companion object {
+        fun decode(s: String): Registro? {
+            val partes = s.split(FIELD_SEP)
+            if (partes.size < 6) return null
+            return try {
+                Registro(
+                    medidor = partes[0],
+                    fecha = partes[1],
+                    lecturaAnterior = partes[2].toDouble(),
+                    lecturaPosterior = partes[3].toDouble(),
+                    precioKw = partes[4].toDouble(),
+                    descripcion = partes[5]
+                )
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
+}
+
+private fun cargarRegistros(context: Context): List<Registro> {
+    val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    val raw = prefs.getString(PREFS_KEY, "") ?: ""
+    if (raw.isBlank()) return emptyList()
+    return raw.split(RECORD_SEP).mapNotNull { Registro.decode(it) }
+}
+
+private fun guardarRegistros(context: Context, registros: List<Registro>) {
+    val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    val raw = registros.joinToString(RECORD_SEP) { it.encode() }
+    prefs.edit().putString(PREFS_KEY, raw).apply()
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegistroConsumoScreen() {
+    val context = LocalContext.current
+
     var medidor by remember { mutableStateOf("") }
     var fecha by remember { mutableStateOf("31/07/2026") }
     var lecturaAnterior by remember { mutableStateOf("") }
@@ -52,6 +101,11 @@ fun RegistroConsumoScreen() {
     var errorMsg by remember { mutableStateOf("") }
 
     val registros = remember { mutableStateListOf<Registro>() }
+
+    LaunchedEffect(Unit) {
+        registros.clear()
+        registros.addAll(cargarRegistros(context))
+    }
 
     val historialMedidorActual = registros.filter {
         it.medidor.trim().equals(medidor.trim(), ignoreCase = true) && medidor.isNotBlank()
@@ -73,11 +127,6 @@ fun RegistroConsumoScreen() {
                 Icon(Icons.Default.List, null, tint = Color.White, modifier = Modifier.size(24.dp))
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Registro Consumo", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-            }
-            Row {
-                Button(onClick = {}, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF388E3C)), shape = RoundedCornerShape(4.dp), contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)) { Text("Entrar", color = Color.White, fontSize = 11.sp) }
-                Spacer(modifier = Modifier.width(4.dp))
-                Button(onClick = {}, colors = ButtonDefaults.buttonColors(containerColor = RedBtn), shape = RoundedCornerShape(4.dp), contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)) { Text("Salir", color = Color.White, fontSize = 11.sp) }
             }
         }
 
@@ -104,15 +153,6 @@ fun RegistroConsumoScreen() {
 
                 FormLabel("Descripción:")
                 CustomTextField(value = descripcion, onValueChange = { descripcion = it }, singleLine = false)
-
-                Spacer(modifier = Modifier.height(12.dp))
-                Text("📷 Foto (opcional)", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(6.dp))
-                Row {
-                    Button(onClick = {}, colors = ButtonDefaults.buttonColors(containerColor = BlueBtn), shape = RoundedCornerShape(4.dp)) { Text("Cámara", fontSize = 13.sp) }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(onClick = {}, colors = ButtonDefaults.buttonColors(containerColor = BlueBtn), shape = RoundedCornerShape(4.dp)) { Text("Galería", fontSize = 13.sp) }
-                }
 
                 if (errorMsg.isNotBlank()) {
                     Spacer(modifier = Modifier.height(8.dp))
@@ -144,6 +184,7 @@ fun RegistroConsumoScreen() {
                                         descripcion = descripcion
                                     )
                                 )
+                                guardarRegistros(context, registros)
                                 lecturaAnterior = ""
                                 lecturaPosterior = ""
                                 precioKw = ""
@@ -156,25 +197,6 @@ fun RegistroConsumoScreen() {
                     shape = RoundedCornerShape(4.dp)
                 ) {
                     Text("Guardar registro", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = CardBg), shape = RoundedCornerShape(6.dp)) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(checked = true, onCheckedChange = {}, colors = CheckboxDefaults.colors(checkedColor = RedBtn))
-                    Text("Consumo: altura = consumo", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                    IndicatorDot(Color(0xFF4CAF50), "Bajo")
-                    Spacer(modifier = Modifier.width(12.dp))
-                    IndicatorDot(Color(0xFFFFEB3B), "Medio")
-                    Spacer(modifier = Modifier.width(12.dp))
-                    IndicatorDot(Color(0xFFFF5722), "Alto")
                 }
             }
         }
@@ -197,8 +219,6 @@ fun RegistroConsumoScreen() {
 fun CustomTextField(value: String, onValueChange: (String) -> Unit, isNumeric: Boolean = false, singleLine: Boolean = true, trailingIcon: @Composable (() -> Unit)? = null) {
     TextField(value = value, onValueChange = onValueChange, modifier = Modifier.fillMaxWidth().height(if (singleLine) 56.dp else 100.dp), colors = TextFieldDefaults.textFieldColors(containerColor = InputBg, focusedTextColor = Color.White, unfocusedTextColor = Color.White, focusedIndicatorColor = BlueBtn, unfocusedIndicatorColor = Color.Transparent), shape = RoundedCornerShape(4.dp), singleLine = singleLine, trailingIcon = trailingIcon, keyboardOptions = KeyboardOptions(keyboardType = if (isNumeric) KeyboardType.Number else KeyboardType.Text))
 }
-
-@Composable fun IndicatorDot(color: Color, label: String) { Row(verticalAlignment = Alignment.CenterVertically) { Box(modifier = Modifier.size(8.dp).background(color, shape = CircleShape)); Spacer(modifier = Modifier.width(4.dp)); Text(label, color = TextGray, fontSize = 12.sp) } }
 
 @Composable
 fun TableLayout(registros: List<Registro>) {
