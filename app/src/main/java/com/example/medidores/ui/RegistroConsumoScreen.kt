@@ -154,6 +154,13 @@ fun RegistroConsumoScreen() {
                 FormLabel("Descripción:")
                 CustomTextField(value = descripcion, onValueChange = { descripcion = it }, singleLine = false)
 
+                Spacer(modifier = Modifier.height(12.dp))
+                Text("📷 Foto (opcional)", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(6.dp))
+                Row {
+                    Button(onClick = {}, colors = ButtonDefaults.buttonColors(containerColor = BlueBtn), shape = RoundedCornerShape(4.dp)) { Text("Cámara", fontSize = 13.sp) }
+                }
+
                 if (errorMsg.isNotBlank()) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(errorMsg, color = RedBtn, fontSize = 12.sp)
